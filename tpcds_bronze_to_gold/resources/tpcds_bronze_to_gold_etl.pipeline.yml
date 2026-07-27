@@ -1,0 +1,29 @@
+# Bronze -> Silver -> Gold pipeline for the samples.tpcds_sf1 star schema
+# (store_sales fact + store/customer/item/date_dim dimensions).
+# See ../src/tpcds_bronze_to_gold_etl/README.md for the full design.
+
+resources:
+  pipelines:
+    tpcds_bronze_to_gold_etl:
+      name: tpcds_bronze_to_gold_etl
+      catalog: ${var.catalog}
+      # Pipeline default schema = bronze layer. Silver/gold tables use
+      # fully-qualified names built from the configuration values below.
+      schema: ${var.bronze_schema}
+      serverless: true
+      root_path: "../src/tpcds_bronze_to_gold_etl"
+
+      configuration:
+        bronze_schema: ${var.bronze_schema}
+        silver_schema: ${var.silver_schema}
+        gold_schema: ${var.gold_schema}
+
+      libraries:
+        - glob:
+            include: ../src/tpcds_bronze_to_gold_etl/transformations/**
+
+      environment:
+        dependencies:
+          # We include every dependency defined by pyproject.toml by defining an editable environment
+          # that points to the folder where pyproject.toml is deployed.
+          - --editable ${workspace.file_path}
