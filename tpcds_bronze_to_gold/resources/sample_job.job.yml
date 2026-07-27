@@ -1,0 +1,36 @@
+# Scheduled job that refreshes the bronze -> silver -> gold pipeline daily.
+
+resources:
+  jobs:
+    tpcds_bronze_to_gold_refresh:
+      name: tpcds_bronze_to_gold_refresh
+
+      trigger:
+        # Run this job every day, exactly one day from the last run; see https://docs.databricks.com/api/workspace/jobs/create#trigger
+        periodic:
+          interval: 1
+          unit: DAYS
+
+      #email_notifications:
+      #  on_failure:
+      #    - your_email@example.com
+
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: bronze_schema
+          default: ${var.bronze_schema}
+        - name: silver_schema
+          default: ${var.silver_schema}
+        - name: gold_schema
+          default: ${var.gold_schema}
+
+      tasks:
+        - task_key: refresh_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.tpcds_bronze_to_gold_etl.id}
+
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "4"
