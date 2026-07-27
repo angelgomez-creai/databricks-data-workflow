@@ -1,0 +1,56 @@
+# This is a Databricks asset bundle definition for tpcds_bronze_to_gold.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+#
+# Implements the bronze -> silver -> gold pipeline scoped in
+# https://github.com/angelgomez-creai/databricks-data-workflow/issues/1
+#
+# Source tables are read from the read-only `samples.tpcds_sf1` schema.
+# All pipeline output tables are created in the `workspace` catalog, one
+# schema per medallion layer.
+bundle:
+  name: tpcds_bronze_to_gold
+  uuid: 7382ddfa-49e2-4f69-87bd-9d7b0a18a276
+
+include:
+  - resources/*.yml
+
+# Variable declarations. These variables are assigned in the dev/prod targets below.
+variables:
+  catalog:
+    description: Unity Catalog catalog where all pipeline output tables are created (source data is always read from the `samples` catalog, regardless of this value)
+  bronze_schema:
+    description: Schema for bronze (raw ingestion) tables
+  silver_schema:
+    description: Schema for silver (cleaned/conformed) tables
+  gold_schema:
+    description: Schema for gold (business-ready star schema) tables
+
+targets:
+  dev:
+    # The default target uses 'mode: development' to create a development copy.
+    # - Deployed resources get prefixed with '[dev my_user_name]'
+    # - Any job schedules and triggers are paused by default.
+    # See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.html.
+    mode: development
+    default: true
+    workspace:
+      host: https://dbc-de0c82f4-ee0b.cloud.databricks.com
+    variables:
+      catalog: workspace
+      bronze_schema: tpcds_bronze
+      silver_schema: tpcds_silver
+      gold_schema: tpcds_gold
+  prod:
+    mode: production
+    workspace:
+      host: https://dbc-de0c82f4-ee0b.cloud.databricks.com
+      # We explicitly deploy to /Workspace/Users/angelgomez@creai.mx to make sure we only have a single copy.
+      root_path: /Workspace/Users/angelgomez@creai.mx/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      catalog: workspace
+      bronze_schema: tpcds_bronze
+      silver_schema: tpcds_silver
+      gold_schema: tpcds_gold
+    permissions:
+      - user_name: angelgomez@creai.mx
+        level: CAN_MANAGE
